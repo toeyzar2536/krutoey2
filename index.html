@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เกมตีตัวตุ่น แม่ ก กา AR</title>
+  <title>คณิตคิดสนุก AR: บวกลบเลข เลือกซ้าย-ขวา</title>
   
   <!-- นำเข้าฟอนต์ Kanit จาก Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +24,7 @@
       user-select: none;
     }
     
-    /* สไตล์ป้ายไม้ 3 มิติ */
+    /* สไตล์ป้ายไม้ 3 มิติโทนน้ำตาลส้มการ์ตูน */
     .wood-board {
       background: linear-gradient(to bottom, #d97706, #b45309);
       border: 4px solid #451a03;
@@ -39,7 +39,37 @@
       text-shadow: 2px 2px 0px #78350f;
     }
 
-    /* แอนิเมชันปุ่มเด้งดึ๋ง */
+    /* ปุ่มคำตอบฝั่งซ้ายและขวาแนว 3D อวบอิ่ม */
+    .choice-btn-left {
+      background: linear-gradient(to bottom, #ef4444, #dc2626);
+      border: 6px solid #7f1d1d;
+      box-shadow: 0 12px 0px #7f1d1d, 0 20px 25px rgba(0,0,0,0.3);
+      text-shadow: 3px 3px 0px #7f1d1d;
+    }
+    .choice-btn-left:active {
+      transform: translateY(6px);
+      box-shadow: 0 6px 0px #7f1d1d, 0 10px 15px rgba(0,0,0,0.3);
+    }
+
+    .choice-btn-right {
+      background: linear-gradient(to bottom, #3b82f6, #2563eb);
+      border: 6px solid #1e3a8a;
+      box-shadow: 0 12px 0px #1e3a8a, 0 20px 25px rgba(0,0,0,0.3);
+      text-shadow: 3px 3px 0px #1e3a8a;
+    }
+    .choice-btn-right:active {
+      transform: translateY(6px);
+      box-shadow: 0 6px 0px #1e3a8a, 0 10px 15px rgba(0,0,0,0.3);
+    }
+
+    /* ปุ่มคำตอบเมื่อถูกโฮเวอร์หรือเตรียมพร้อมเลือกในระบบ AR */
+    .choice-hovered {
+      filter: brightness(1.15);
+      transform: scale(1.04);
+      border-color: #facc15 !important;
+    }
+
+    /* แอนิเมชันปุ่มเด้งดึ๋งดึงดูดสายตา */
     @keyframes heartbeat {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.08); }
@@ -48,35 +78,35 @@
       animation: heartbeat 1.5s infinite ease-in-out;
     }
 
-    /* แอนิเมชันก้อนเมฆลอย */
+    /* เมฆและพระอาทิตย์เคลื่อนไหว */
     @keyframes moveCloud {
       0% { transform: translateX(-120%); }
       100% { transform: translateX(120vw); }
     }
     .cloud-slow {
-      animation: moveCloud 35s linear infinite;
+      animation: moveCloud 40s linear infinite;
     }
     .cloud-fast {
-      animation: moveCloud 20s linear infinite;
+      animation: moveCloud 24s linear infinite;
     }
 
-    /* แอนิเมชันตัวเลขคะแนนลอยตัวขึ้น */
+    /* แอนิเมชันตัวเลขคะแนนเด้งลอยตัวขึ้นฟ้า */
     @keyframes floatUp {
       0% {
         transform: translate(-50%, 0px) scale(0.8);
         opacity: 0;
       }
       20% {
-        transform: translate(-50%, -25px) scale(1.3);
+        transform: translate(-50%, -30px) scale(1.4);
         opacity: 1;
       }
       100% {
-        transform: translate(-50%, -100px) scale(1);
+        transform: translate(-50%, -120px) scale(1);
         opacity: 0;
       }
     }
     .floating-score {
-      animation: floatUp 0.8s ease-out forwards;
+      animation: floatUp 0.9s ease-out forwards;
     }
 
     /* ซ่อน scrollbar */
@@ -87,94 +117,75 @@
 </head>
 <body class="bg-gradient-to-b from-sky-300 via-sky-200 to-emerald-100 h-screen w-screen relative flex flex-col justify-between overflow-hidden">
 
-  <!-- กล้องเว็บแคม (ซ่อนไว้ แต่ใช้ดึงเฟรมมาประมวลผล) -->
+  <!-- กล้องเว็บแคม (ซ่อนวิดีโอต้นฉบับไว้) -->
   <video id="webcam" class="hidden" autoplay playsinline></video>
   
-  <!-- พื้นหลังภาพสะท้อนจากกล้อง -->
-  <div id="camera-overlay" class="absolute inset-0 w-full h-full opacity-20 pointer-events-none z-0 transition-opacity duration-500">
+  <!-- พื้นหลังภาพสะท้อนเงาจากกล้อง (ลดความโปร่งใสลงเล็กน้อยเพื่อให้เห็นฉากสดใสและโฟกัสที่การตอบ) -->
+  <div id="camera-overlay" class="absolute inset-0 w-full h-full opacity-25 pointer-events-none z-0 transition-opacity duration-500">
     <canvas id="camera-canvas" class="w-full h-full object-cover"></canvas>
   </div>
 
-  <!-- แคนวาสสำหรับวาดตัวค้อนและการจับตำแหน่งมือ -->
+  <!-- แคนวาสสำหรับวาดพอยน์เตอร์มือวิเศษ ดนตรี หรือเอฟเฟกต์ทุบดาวตก -->
   <canvas id="game-canvas" class="absolute inset-0 w-full h-full z-40 pointer-events-none"></canvas>
 
-  <!-- บรรยากาศฉากหลัง: เมฆและพระอาทิตย์ -->
+  <!-- บรรยากาศแสนสุข: เมฆลอย และพระอาทิตย์หมุนดุ๊กดิ๊ก -->
   <div class="absolute inset-0 pointer-events-none z-0">
-    <!-- พระอาทิตย์ -->
     <div class="absolute top-6 right-8 w-24 h-24 bg-yellow-400 rounded-full shadow-[0_0_40px_#facc15] animate-pulse"></div>
-    <!-- เมฆ -->
     <div class="absolute top-12 left-10 w-28 h-10 bg-white opacity-80 rounded-full cloud-slow"></div>
     <div class="absolute top-24 left-1/2 w-40 h-14 bg-white opacity-90 rounded-full cloud-fast"></div>
   </div>
 
-  <!-- 1. หน้าแรก (Start Screen) -->
+  <!-- 1. หน้าแรกเริ่มต้น (Start Screen) -->
   <div id="start-screen" class="absolute inset-0 z-50 flex flex-col justify-center items-center px-4 overflow-y-auto">
-    <!-- หัวข้อไม้ 3 มิติ -->
-    <div class="wood-board text-center px-8 py-5 rounded-3xl max-w-2xl mb-8 transform hover:scale-105 transition-transform duration-300">
-      <h1 class="text-white text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-wider drop-shadow-lg">
-        เกมตีตัวตุ่น แม่ ก กา
+    <!-- ป้ายหัวข้อเกมไม้สุดอลังการ -->
+    <div class="wood-board text-center px-8 py-6 rounded-3xl max-w-2xl mb-6 transform hover:scale-105 transition-transform duration-300">
+      <h1 class="text-white text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-wider drop-shadow-lg leading-tight">
+        คณิตคิดสนุก AR
       </h1>
       <p class="text-yellow-200 text-lg sm:text-xl font-medium mt-2 tracking-wide">
-        มาตราตัวสะกดแสนสนุก ระดับชั้นประถมศึกษา
+        บวกลบเลขสุดท้าทาย เลือกซ้าย-ขวา! 🧮
       </p>
     </div>
 
-    <!-- แผงกติกาการเล่น -->
-    <div class="bg-white/90 backdrop-blur-sm border-4 border-emerald-500 rounded-3xl p-6 max-w-xl w-full shadow-2xl mb-8 text-emerald-950">
+    <!-- กติกาการเล่นและการอธิบายในรูปแบบการ์ตูนน่ารัก -->
+    <div class="bg-white/95 backdrop-blur-sm border-4 border-emerald-500 rounded-3xl p-6 max-w-xl w-full shadow-2xl mb-6 text-emerald-950">
       <h2 class="text-xl sm:text-2xl font-bold text-center text-emerald-700 mb-4 border-b-2 border-emerald-100 pb-2">
-        วิธีการเล่น & กติกา
+        กติกาและวิธีเล่นแสนง่าย
       </h2>
       
       <div class="space-y-4">
         <div class="flex items-start gap-3">
           <div class="bg-emerald-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">1</div>
-          <p class="text-base sm:text-lg">ยกมือขึ้นเพื่อให้กล้องตรวจจับปลายนิ้ว จะมี <b>ค้อนของเล่น</b> ลอยตามมือของคุณ</p>
+          <p class="text-base sm:text-lg">ยกมือขึ้นให้กล้องเห็นเพื่อควบคุม <b>"คฑาดาววิเศษ"</b> หรือใช้เมาส์คลิก/แตะหน้าจอ</p>
         </div>
         <div class="flex items-start gap-3">
           <div class="bg-emerald-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">2</div>
-          <p class="text-base sm:text-lg">เลื่อนค้อนไปตีตัวตุ่นที่ถือ <b>"คำแม่ ก กา" (คำไม่มีตัวสะกด)</b> ให้ถูกต้อง</p>
+          <p class="text-base sm:text-lg">คิดเลขโจทย์ตรงกลาง แล้วยื่นคฑาไปแตะฝั่ง <b><span class="text-red-500">ซ้าย (สีแดง)</span></b> หรือ <b><span class="text-blue-500">ขวา (สีน้ำเงิน)</span></b> เพื่อตอบ</p>
         </div>
         <div class="flex items-start gap-3">
           <div class="bg-emerald-500 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">3</div>
-          <p class="text-base sm:text-lg">ตีถูกได้ <span class="text-emerald-600 font-bold">+10 คะแนน</span> หากตีคำสะกดมีตัวสะกดจะถูก <span class="text-rose-500 font-bold">-5 คะแนน</span></p>
+          <p class="text-base sm:text-lg">ตอบถูกรับทันที <span class="text-emerald-600 font-bold">+10 คะแนน</span> ตอบผิดหักคะแนน <span class="text-rose-500 font-bold">-5 คะแนน</span> (เวลา 60 วินาที)</p>
         </div>
       </div>
 
-      <!-- สรุปกลุ่มคำศัพท์ -->
-      <div class="mt-4 pt-3 border-t border-emerald-100 grid grid-cols-2 gap-4 text-xs sm:text-sm">
-        <div class="bg-green-50 p-2 rounded-xl border border-green-200">
-          <strong class="text-green-700 block">🔨 ตีถูก (แม่ ก กา):</strong>
-          ปลา, หมา, ตา, ขา, ปู, งู, เสือ, เรือ, ไก่, มะลิ
-        </div>
-        <div class="bg-rose-50 p-2 rounded-xl border border-rose-200">
-          <strong class="text-rose-700 block">❌ ห้ามตี (มีตัวสะกด):</strong>
-          เดือน, นก, ปาก, กิน, ลม, ฝน, คน, บ้าน, แมว, ช้าง
-        </div>
+      <!-- สรุประดับความท้าทาย -->
+      <div class="mt-4 pt-3 border-t border-emerald-100 text-center text-xs sm:text-sm text-emerald-800">
+        💡 ยิ่งเวลาเหลือน้อย โจทย์เลขจะสนุกเร้าใจและท้าทายมากขึ้นเรื่อยๆ นะเด็กๆ!
       </div>
     </div>
 
-    <!-- ปุ่มเริ่มเกมแบบเด้งดึ๋ง -->
-    <button id="btn-start" class="animate-bounce-play wood-board-yellow text-white text-2xl sm:text-3xl font-extrabold px-12 py-5 rounded-full hover:brightness-110 active:scale-95 transition-all">
-      เริ่มเกมเลย! 🚀
+    <!-- ปุ่มเริ่มเกมแนวเด้งดึ๋งกระตุ้นความตื่นเต้น -->
+    <button id="btn-start" class="animate-bounce-play wood-board-yellow text-white text-2xl sm:text-3xl font-extrabold px-14 py-5 rounded-full hover:brightness-110 active:scale-95 transition-all">
+      ลุยกันเลย! 🚀
     </button>
-    
-    <!-- ตกแต่งมุมล่างด้วยตัวตุ่นน่ารัก -->
-    <div class="absolute bottom-4 left-4 w-16 h-16 opacity-30 sm:opacity-70 pointer-events-none">
-      <svg viewBox="0 0 100 100" class="w-full h-full">
-        <ellipse cx="50" cy="65" rx="35" ry="30" fill="#8B5A2B" />
-        <circle cx="35" cy="50" r="5" fill="#FFF" /><circle cx="35" cy="50" r="2.5" fill="#000" />
-        <circle cx="65" cy="50" r="5" fill="#FFF" /><circle cx="65" cy="50" r="2.5" fill="#000" />
-        <polygon points="50,58 46,54 54,54" fill="#FFB6C1" />
-      </svg>
-    </div>
   </div>
 
   <!-- 2. หน้าจอหลักในการเล่นเกม (Game Screen) -->
   <div id="game-screen" class="hidden absolute inset-0 z-10 flex flex-col justify-between p-4 pb-0 select-none">
     
-    <!-- แถบข้อมูลด้านบน (Scoreboard) -->
+    <!-- แถบด้านบนแสดงเวลาและคะแนน -->
     <div class="flex justify-between items-center w-full max-w-5xl mx-auto z-10 pointer-events-auto">
-      <!-- ป้ายไม้เวลาอยู่มุมซ้าย -->
+      <!-- ป้ายไม้บอกเวลาทางด้านซ้าย -->
       <div class="wood-board px-4 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center gap-2">
         <span class="text-2xl sm:text-3xl">⏱️</span>
         <div class="text-left">
@@ -183,32 +194,54 @@
         </div>
       </div>
 
-      <!-- ข้อความแจ้งเตือนสถานะกล้อง/มือ -->
-      <div id="camera-status" class="bg-black/60 backdrop-blur-sm text-yellow-300 border-2 border-yellow-400/50 px-4 py-2 rounded-full text-sm sm:text-base font-bold animate-pulse">
-        👋 กำลังเปิดกล้อง/ยกมือให้เห็นเลย!
+      <!-- กล่องเตือนให้ยกมือกรณีหาข้อต่อไม่เจอ -->
+      <div id="camera-status" class="bg-black/60 backdrop-blur-sm text-yellow-300 border-2 border-yellow-400/50 px-4 py-2 rounded-full text-xs sm:text-sm md:text-base font-bold animate-pulse">
+        👋 กำลังสแกนหาข้อต่อมือ... ยกมือขึ้นมาได้เลย!
       </div>
 
-      <!-- ป้ายไม้คะแนนอยู่มุมขวา -->
+      <!-- ป้ายไม้คะแนนรางวัลทางด้านขวา -->
       <div class="wood-board-yellow px-4 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center gap-2">
         <span class="text-2xl sm:text-3xl">🏆</span>
         <div class="text-left">
-          <p class="text-amber-950 text-xs sm:text-sm font-extrabold leading-none">คะแนน</p>
+          <p class="text-amber-950 text-xs sm:text-sm font-extrabold leading-none">คะแนนรวม</p>
           <p id="score-display" class="text-amber-950 text-2xl sm:text-3xl font-extrabold leading-tight">00</p>
         </div>
       </div>
     </div>
 
-    <!-- ฟิลด์หลุมตัวตุ่น 3x3 -->
-    <div class="flex-1 flex justify-center items-center max-h-[60vh] sm:max-h-[65vh] w-full max-w-3xl mx-auto px-2 sm:px-4 mt-2 mb-4 z-10">
-      <div class="grid grid-cols-3 gap-3 sm:gap-6 lg:gap-8 w-full aspect-square max-w-[550px]">
-        <!-- วนสร้างหลุม 9 หลุมด้วย JS (จะถูกแทรกที่นี่) -->
-        <div id="moles-grid" class="grid grid-cols-3 gap-3 sm:gap-6 lg:gap-8 col-span-3 h-full w-full"></div>
+    <!-- ส่วนจัดกระดานโจทย์และปุ่มตัวเลือกขนาดมหึมา (เหมาะสำหรับขึ้นโปรเจกเตอร์) -->
+    <div class="flex-1 flex flex-col justify-center items-center w-full max-w-5xl mx-auto px-4 z-10 my-4 gap-6">
+      
+      <!-- กระดานโจทย์คณิตยักษ์ลอยเด่นกลางหาว -->
+      <div class="bg-amber-900/95 border-8 border-amber-950 rounded-[2.5rem] p-6 sm:p-8 w-full max-w-xl text-center shadow-2xl relative">
+        <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-yellow-400 text-amber-950 px-6 py-1 rounded-full text-sm font-black border-4 border-amber-950 shadow-md">
+          โจทย์ข้อนี้ตอบอะไรเอ่ย?
+        </div>
+        <p id="math-problem" class="text-white font-extrabold text-5xl sm:text-6xl md:text-7xl lg:text-8xl py-4 drop-shadow-md tracking-wider">
+          0 + 0 = ?
+        </p>
+      </div>
+
+      <!-- ปุ่มตัวเลือกคำตอบ 2 ข้าง ยักษ์ สะดุดตา -->
+      <div class="grid grid-cols-2 gap-6 sm:gap-10 w-full max-w-4xl px-2">
+        
+        <!-- ตัวเลือกฝั่งซ้าย (สีแดง) -->
+        <button id="choice-left-btn" onclick="handleTouchAnswer(0)" class="choice-btn-left h-44 sm:h-52 md:h-60 rounded-[2rem] flex flex-col justify-center items-center transition-all duration-200">
+          <span class="text-red-100 text-lg sm:text-2xl font-bold tracking-wide uppercase opacity-90 mb-2">👈 ฝั่งซ้าย</span>
+          <span id="choice-left-text" class="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black">?</span>
+        </button>
+
+        <!-- ตัวเลือกฝั่งขวา (สีน้ำเงิน) -->
+        <button id="choice-right-btn" onclick="handleTouchAnswer(1)" class="choice-btn-right h-44 sm:h-52 md:h-60 rounded-[2rem] flex flex-col justify-center items-center transition-all duration-200">
+          <span class="text-blue-100 text-lg sm:text-2xl font-bold tracking-wide uppercase opacity-90 mb-2">ฝั่งขวา 👉</span>
+          <span id="choice-right-text" class="text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black">?</span>
+        </button>
+        
       </div>
     </div>
 
-    <!-- ส่วนทุ่งหญ้าหน้าจอและขอบล่าง -->
-    <div class="relative w-full h-[15vh] max-h-[140px] pointer-events-none z-20">
-      <!-- ภูเขาหญ้าสวยๆ -->
+    <!-- ส่วนทุ่งหญ้าการ์ตูนด้านล่าง -->
+    <div class="relative w-full h-[12vh] max-h-[120px] pointer-events-none z-20">
       <svg class="absolute bottom-0 w-full h-full text-emerald-600 fill-current" viewBox="0 0 1000 100" preserveAspectRatio="none">
         <path d="M0,80 Q250,40 500,80 T1000,80 L1000,100 L0,100 Z" />
       </svg>
@@ -218,96 +251,53 @@
     </div>
   </div>
 
-  <!-- 3. หน้าจอหมดเวลา / จบเกม (Game Over Screen) -->
-  <div id="game-over-screen" class="hidden absolute inset-0 z-50 flex flex-col justify-center items-center px-4 bg-black/60 backdrop-blur-md">
-    <!-- การ์ดสรุปคะแนนสไตล์ไม้ -->
+  <!-- 3. หน้าจอสรุปผลเมื่อหมดเวลา (Game Over Screen) -->
+  <div id="game-over-screen" class="hidden absolute inset-0 z-50 flex flex-col justify-center items-center px-4 bg-black/70 backdrop-blur-md">
+    <!-- ป้ายสรุปเกียรติยศไม้บอร์ดคลาสสิก -->
     <div class="wood-board text-center p-8 rounded-3xl max-w-md w-full shadow-2xl border-4 border-amber-950 mb-6 transform scale-100 transition-all duration-500">
       <span class="text-6xl block mb-4 animate-bounce">🏆</span>
-      <h2 class="text-yellow-100 text-3xl sm:text-4xl font-extrabold mb-2">หมดเวลาแล้ว!</h2>
-      <p id="evaluation-text" class="text-yellow-200 text-lg mb-6">พยายามได้ยอดเยี่ยมมาก!</p>
+      <h2 class="text-yellow-100 text-3xl sm:text-4xl font-extrabold mb-2">เก่งมากๆ เลย!</h2>
+      <p id="evaluation-text" class="text-yellow-200 text-base sm:text-lg mb-6">สมองไว คิดสนุกเก่งที่สุด!</p>
       
-      <!-- ตัวเลขคะแนน -->
+      <!-- พื้นที่สรุปตัวเลขคะแนน -->
       <div class="bg-yellow-100/10 rounded-2xl py-4 px-6 mb-6 border border-white/20">
-        <p class="text-yellow-200 text-sm font-bold">คะแนนรวมทั้งหมดของคุณ</p>
+        <p class="text-yellow-200 text-sm font-bold">คะแนนสะสมทั้งหมดของคุณ</p>
         <p id="final-score" class="text-white text-5xl sm:text-6xl font-black tracking-tight drop-shadow-md">0</p>
       </div>
 
-      <!-- สถิติการตี -->
+      <!-- สถิติความสามารถในการตอบอย่างยิบ -->
       <div class="grid grid-cols-2 gap-4 text-left text-sm mb-6">
         <div class="bg-emerald-900/60 p-3 rounded-xl border border-emerald-700/50">
-          <p class="text-emerald-200 font-bold">🔨 ตีถูก (แม่ ก กา)</p>
-          <p id="stat-correct" class="text-white text-xl font-extrabold text-center mt-1">0 ครั้ง</p>
+          <p class="text-emerald-200 font-bold">✨ ตอบถูกทั้งหมด</p>
+          <p id="stat-correct" class="text-white text-xl font-extrabold text-center mt-1">0 ข้อ</p>
         </div>
         <div class="bg-rose-950/60 p-3 rounded-xl border border-rose-900/50">
-          <p class="text-rose-200 font-bold">❌ พลาด (ตัวสะกดอื่น)</p>
-          <p id="stat-wrong" class="text-white text-xl font-extrabold text-center mt-1">0 ครั้ง</p>
+          <p class="text-rose-200 font-bold">❌ ตอบผิดพลาด</p>
+          <p id="stat-wrong" class="text-white text-xl font-extrabold text-center mt-1">0 ข้อ</p>
         </div>
       </div>
 
-      <!-- ปุ่มเริ่มเล่นใหม่ -->
+      <!-- ปุ่มเริ่มเล่นอีกครั้ง -->
       <button id="btn-restart" class="wood-board-yellow text-white text-xl sm:text-2xl font-extrabold px-10 py-4 rounded-full w-full hover:brightness-110 active:scale-95 transition-all">
-        เล่นอีกครั้ง 🔄
+        เริ่มท้าทายใหม่ 🔄
       </button>
     </div>
   </div>
 
-  <!-- ตัวโหลดขณะกำลังเริ่มต้นใช้งานกล้อง -->
-  <div id="loading-overlay" class="hidden absolute inset-0 z-50 bg-emerald-950/90 flex flex-col justify-center items-center text-white">
+  <!-- หน้าจอดาวน์โหลดและเริ่มต้นกล้อง (Loading Box) -->
+  <div id="loading-overlay" class="hidden absolute inset-0 z-50 bg-emerald-950/92 flex flex-col justify-center items-center text-white">
     <div class="relative flex items-center justify-center">
       <div class="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-yellow-400"></div>
       <span class="absolute text-3xl">📷</span>
     </div>
-    <p class="text-2xl font-bold mt-6 text-yellow-300 text-center px-4">กำลังเตรียมกล้อง AR และโมเดลวิเคราะห์มือ...</p>
-    <p class="text-sm text-green-300 mt-2 text-center px-6">กรุณากด "อนุญาต" เพื่อเข้าถึงสิทธิ์กล้อง หรือใช้เมาส์/สัมผัสเพื่อเล่นหากเบราว์เซอร์ไม่รองรับ</p>
+    <p class="text-2xl font-bold mt-6 text-yellow-300 text-center px-4">กำลังเตรียมกล้องและอุปกรณ์จับความเคลื่อนไหว...</p>
+    <p class="text-sm text-green-300 mt-2 text-center px-6">กรุณากด "อนุญาต" สิทธิ์เข้าถึงกล้อง หรือสามารถใช้เมาส์/ทัชสกรีนทดแทนได้หากอุปกรณ์ไม่มีกล้อง</p>
   </div>
 
   <script>
-    /* คำศัพท์ภาษาไทยที่ใช้สอน */
-    // คำที่อยู่ในมาตรา "แม่ ก กา" (ไม่มีตัวสะกด) -> เป้าหมายที่ต้องตี
-    const wordsKoKa = [
-      'ปลา', 'หมา', 'ตา', 'ขา', 'ปู', 'งู', 'หู', 'มือ', 'เสือ', 'เรือ', 
-      'ไก่', 'นา', 'ดี', 'สี', 'ผี', 'ชา', 'เต่า', 'แพะ', 'แกะ', 'กะลา', 
-      'ฝาชี', 'พายุ', 'มะลิ', 'ตะปู', 'กะทิ', 'มะเขือ', 'บัว', 'ไฟ'
-    ];
-
-    // คำที่มีตัวสะกด (ไม่ใช่แม่ ก กา) -> ห้ามตีเด็ดขาด
-    const wordsWithConsonants = [
-      'เดือน', 'นก', 'ปาก', 'กิน', 'ลม', 'ฝน', 'คน', 'บ้าน', 'นอน', 'จาน', 
-      'แมว', 'ช้าง', 'ลิง', 'เป็ด', 'กล้วย', 'มด', 'ส้ม', 'กบ', 'ผึ้ง', 'โคม', 
-      'สมุด', 'ถ้วย', 'ดิน', 'เรียน', 'ครู'
-    ];
-
-    /* ตัวแปรเก็บสถานะของเกม */
-    let score = 0;
-    let timeLeft = 60;
-    let gameInterval = null;
-    let spawnTimeout = null;
-    let isPlaying = false;
-    let totalCorrectHits = 0;
-    let totalWrongHits = 0;
-
-    // การตั้งค่าความเร็วของตัวตุ่น (จะแปรผันตามเวลาที่ลดลงเพื่อความท้าทาย)
-    let minSpawnInterval = 1500; // มิลลิวินาทีเริ่มต้น
-    let maxSpawnInterval = 2000;
-    let moleStayDuration = 1800; // ตัวตุ่นโผล่ค้างไว้ก่อนจะมุดลง
-
-    // โครงสร้างข้อมูลสำหรับ 9 หลุม
-    const moles = Array.from({ length: 9 }, (_, index) => ({
-      index: index,
-      active: false,
-      word: '',
-      isKoKa: false,
-      hit: false,
-      hideTimer: null
-    }));
-
-    // ตัวแปรควบคุมมือและการสัมผัส
-    let cursors = []; // เก็บตำแหน่ง "ค้อน" ตรวจพบจากมือ หรือสัมผัสหน้าจอ
-    let cameraActive = false;
-    let mouseCursorActive = false; // ตรวจจับเมาส์เผื่อระบบกล้องใช้ไม่ได้
+    /* ตัวแปรจัดการเสียงและการจำลองสัญญาณ (Web Audio API) */
     let audioCtx = null;
 
-    // ฟังก์ชันสร้างเสียงสำหรับเกมโดยไม่พึ่งพาไฟล์ภายนอก
     function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -317,8 +307,8 @@
       }
     }
 
-    // เสียงตอนตุ่นโผล่ขึ้นมา (เสียงป๊อปสั้นๆ สดใส)
-    function playPopSound() {
+    // เสียงเมื่อมีการเปลี่ยนโจทย์ข้อถัดไป
+    function playNextProblemSound() {
       if (!audioCtx) return;
       try {
         const now = audioCtx.currentTime;
@@ -328,24 +318,23 @@
         gain.connect(audioCtx.destination);
         
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(350, now + 0.12);
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 0.1);
         
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         
         osc.start(now);
-        osc.stop(now + 0.12);
+        osc.stop(now + 0.1);
       } catch (e) { console.error(e); }
     }
 
-    // เสียงตีถูก (เสียงตีตุ๊บรวมกับเสียงกระดิ่งใสๆ สบายหู)
+    // เสียงตอบถูก (ใสๆ รื่นหู)
     function playCorrectSound() {
       if (!audioCtx) return;
       try {
         const now = audioCtx.currentTime;
         
-        // 1. เสียงกระดิ่งความถี่สูง
         const bellOsc = audioCtx.createOscillator();
         const bellGain = audioCtx.createGain();
         bellOsc.connect(bellGain);
@@ -354,27 +343,26 @@
         bellOsc.frequency.setValueAtTime(523.25, now); // C5
         bellOsc.frequency.setValueAtTime(659.25, now + 0.08); // E5
         bellOsc.frequency.setValueAtTime(783.99, now + 0.16); // G5
-        bellGain.gain.setValueAtTime(0.18, now);
-        bellGain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        bellGain.gain.setValueAtTime(0.15, now);
+        bellGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
         bellOsc.start(now);
-        bellOsc.stop(now + 0.45);
+        bellOsc.stop(now + 0.4);
 
-        // 2. เสียงตี (Drum Synth Impact)
         const drumOsc = audioCtx.createOscillator();
         const drumGain = audioCtx.createGain();
         drumOsc.connect(drumGain);
         drumGain.connect(audioCtx.destination);
         drumOsc.type = 'triangle';
-        drumOsc.frequency.setValueAtTime(120, now);
-        drumOsc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
-        drumGain.gain.setValueAtTime(0.3, now);
-        drumGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+        drumOsc.frequency.setValueAtTime(150, now);
+        drumOsc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
+        drumGain.gain.setValueAtTime(0.25, now);
+        drumGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
         drumOsc.start(now);
-        drumOsc.stop(now + 0.15);
+        drumOsc.stop(now + 0.12);
       } catch (e) { console.error(e); }
     }
 
-    // เสียงตีผิดตัวตุ่นตัวสะกดอื่น (เสียงตุ๊บต่ำและแหลมลดลงคล้ายเสียงเตือนผิดพลาด)
+    // เสียงตอบผิดพลาด
     function playWrongSound() {
       if (!audioCtx) return;
       try {
@@ -385,18 +373,18 @@
         gain.connect(audioCtx.destination);
         
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(190, now);
-        osc.frequency.linearRampToValueAtTime(95, now + 0.35);
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.3);
         
-        gain.gain.setValueAtTime(0.25, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
         
         osc.start(now);
-        osc.stop(now + 0.35);
+        osc.stop(now + 0.3);
       } catch (e) { console.error(e); }
     }
 
-    // เสียงกะพริบวิกฤต (เวลาเหลือน้อย 10 วินาทีสุดท้าย)
+    // เสียงกระพริบวิกฤต 10 วินาทีสุดท้าย
     function playTickSound() {
       if (!audioCtx) return;
       try {
@@ -407,7 +395,7 @@
         gain.connect(audioCtx.destination);
         
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, now); // โน้ต A5 สูงและสั้น
+        osc.frequency.setValueAtTime(1000, now);
         gain.gain.setValueAtTime(0.08, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         
@@ -416,83 +404,102 @@
       } catch (e) { console.error(e); }
     }
 
-    // ฟังก์ชันสร้างหน้าตาหลุมตุ่น 9 หลุม
-    function renderMolesGrid() {
-      const gridContainer = document.getElementById('moles-grid');
-      gridContainer.innerHTML = '';
+    /* สถานะและตัวแปรจัดการโจทย์คณิตศาสตร์ */
+    let score = 0;
+    let timeLeft = 60;
+    let gameInterval = null;
+    let isPlaying = false;
+    let totalCorrect = 0;
+    let totalWrong = 0;
+    let canSelect = true; // ล็อคป้องกันการเบิ้ลคลิก/แตะค้างรัวๆ
+
+    let currentProblem = {
+      formula: '',
+      answer: 0,
+      options: [0, 0],
+      correctIndex: 0
+    };
+
+    // ฟังก์ชันสร้างโจทย์โดยแบ่งระดับตามเวลาที่จำกัดขึ้นเรื่อยๆ
+    function generateQuestion() {
+      let num1, num2, isAddition, answer;
       
-      moles.forEach(mole => {
-        const holeHTML = `
-          <div id="hole-${mole.index}" class="hole-container relative aspect-square w-full flex flex-col justify-end items-center select-none" onclick="handleTouchWhack(${mole.index})">
-            
-            <!-- ขอบปากหลุม (ด้านหลังตัวตุ่น) -->
-            <div class="absolute bottom-2 w-[90%] h-[24%] bg-amber-950 rounded-full border-[3px] border-amber-900 shadow-inner z-10"></div>
-            
-            <!-- ตู้นิรภัยสไลด์ตัวตุ่น: ขยายเป็น h-[150%] และกว้างพิเศษ left-[-20%] right-[-20%] เพื่อป้องกันกรอบโดนตัดขอบ -->
-            <div class="absolute bottom-0 left-[-20%] right-[-20%] h-[150%] overflow-hidden flex justify-center items-end z-20 pointer-events-none">
-              
-              <!-- โครงสร้างตัวตุ่นและป้ายคำ -->
-              <div id="mole-body-${mole.index}" class="absolute bottom-0 left-0 right-0 mx-auto translate-y-[115%] transition-transform duration-300 flex flex-col items-center pb-2">
-                
-                <!-- ป้ายคำศัพท์ด้านบนหัวตัวตุ่น: ขยายขนาด min-width และพื้นที่ padding เพื่อโชว์คำเต็มป้ายเสมอ -->
-                <div id="mole-banner-${mole.index}" class="bg-white border-[3px] sm:border-4 border-amber-500 rounded-2xl px-4 py-1.5 font-bold text-amber-900 shadow-md mb-2 text-center scale-95 sm:scale-100 min-w-[100px] sm:min-w-[130px] select-none transition-colors duration-200">
-                  <span id="mole-word-${mole.index}" class="text-xs sm:text-sm md:text-base lg:text-lg font-extrabold tracking-wide whitespace-nowrap">คำศัพท์</span>
-                </div>
-                
-                <!-- ตัวตุ่นดีไซน์ SVG สุดน่ารัก -->
-                <svg class="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28" viewBox="0 0 100 100">
-                  <!-- ลำตัว -->
-                  <ellipse cx="50" cy="65" rx="36" ry="32" fill="#8B5A2B" stroke="#5C3A1A" stroke-width="3.5"/>
-                  <!-- ท้องสีพาสเทลอ่อน -->
-                  <ellipse cx="50" cy="74" rx="22" ry="16" fill="#FCD34D" opacity="0.3"/>
-                  <!-- แขนซ้าย แขนขวา -->
-                  <ellipse cx="14" cy="70" rx="6" ry="12" fill="#8B5A2B" stroke="#5C3A1A" stroke-width="2.5" transform="rotate(-15 14 70)"/>
-                  <ellipse cx="86" cy="70" rx="6" ry="12" fill="#8B5A2B" stroke="#5C3A1A" stroke-width="2.5" transform="rotate(15 86 70)"/>
-                  <!-- ดวงตาโตแป๋ว -->
-                  <circle cx="34" cy="48" r="7.5" fill="#FFFFFF" />
-                  <circle cx="34" cy="48" r="3.5" fill="#1F2937" />
-                  <circle cx="32" cy="46" r="1.5" fill="#FFFFFF" />
-                  
-                  <circle cx="66" cy="48" r="7.5" fill="#FFFFFF" />
-                  <circle cx="66" cy="48" r="3.5" fill="#1F2937" />
-                  <circle cx="64" cy="46" r="1.5" fill="#FFFFFF" />
-                  
-                  <!-- แก้มชมพู -->
-                  <ellipse cx="26" cy="58" rx="5" ry="3" fill="#F472B6" opacity="0.7" />
-                  <ellipse cx="74" cy="58" rx="5" ry="3" fill="#F472B6" opacity="0.7" />
-                  
-                  <!-- จมูกกลมสีชมพู -->
-                  <polygon points="50,56 44,51 56,51" fill="#F472B6" stroke="#DB2777" stroke-width="1.5" />
-                  
-                  <!-- ปากนุ่มนวลและฟันกระต่ายคู่เล็ก -->
-                  <path d="M 45,58 Q 50,65 55,58" stroke="#1F2937" stroke-width="2" fill="none"/>
-                  <rect x="47" y="58" width="3" height="4" fill="#FFF" stroke="#1F2937" stroke-width="1"/>
-                  <rect x="50" y="58" width="3" height="4" fill="#FFF" stroke="#1F2937" stroke-width="1"/>
-                  
-                  <!-- เส้นขีดผม 3 เส้น -->
-                  <path d="M 47,33 Q 50,22 53,33" stroke="#5C3A1A" stroke-width="2.5" fill="none" />
-                  <path d="M 41,35 Q 44,25 47,35" stroke="#5C3A1A" stroke-width="2" fill="none" />
-                  <path d="M 53,35 Q 56,25 59,35" stroke="#5C3A1A" stroke-width="2" fill="none" />
-                </svg>
-              </div>
-            </div>
-            
-            <!-- ขอบปากหลุมและกอหญ้าคลุมด้านหน้า (บังส่วนตัวตุ่นตอนมุดลงสุด) -->
-            <div class="absolute bottom-0 w-full h-[22%] bg-gradient-to-t from-emerald-600 to-green-500 rounded-b-2xl z-30 pointer-events-none flex items-end justify-center">
-              <svg class="w-full h-8 text-emerald-500 fill-current" viewBox="0 0 100 20" preserveAspectRatio="none">
-                <path d="M0,20 L8,6 L16,20 L24,4 L32,20 L40,5 L48,20 L56,7 L64,20 L72,3 L80,20 L88,5 L96,20 L100,20 Z" />
-              </svg>
-            </div>
-          </div>
-        `;
-        gridContainer.insertAdjacentHTML('beforeend', holeHTML);
-      });
+      if (timeLeft > 40) {
+        // ระดับ 1: บวกลบเลขง่ายๆ ไม่เกิน 20
+        isAddition = Math.random() < 0.5;
+        if (isAddition) {
+          num1 = Math.floor(Math.random() * 11) + 1; // 1-11
+          num2 = Math.floor(Math.random() * 10) + 1; // 1-10
+          answer = num1 + num2;
+        } else {
+          num1 = Math.floor(Math.random() * 11) + 10; // 10-20
+          num2 = Math.floor(Math.random() * 10) + 1;  // 1-10
+          answer = num1 - num2;
+        }
+      } else if (timeLeft > 20) {
+        // ระดับ 2: บวกลบไม่เกิน 50
+        isAddition = Math.random() < 0.5;
+        if (isAddition) {
+          num1 = Math.floor(Math.random() * 21) + 10; // 10-30
+          num2 = Math.floor(Math.random() * 20) + 5;  // 5-24
+          answer = num1 + num2;
+        } else {
+          num1 = Math.floor(Math.random() * 31) + 20; // 20-50
+          num2 = Math.floor(Math.random() * 20) + 10; // 10-29
+          answer = num1 - num2;
+        }
+      } else {
+        // ระดับ 3: บวกลบเลขแสนท้าทายไม่เกิน 100
+        isAddition = Math.random() < 0.5;
+        if (isAddition) {
+          num1 = Math.floor(Math.random() * 41) + 20; // 20-60
+          num2 = Math.floor(Math.random() * 31) + 10; // 10-40
+          answer = num1 + num2;
+        } else {
+          num1 = Math.floor(Math.random() * 51) + 40; // 40-90
+          num2 = Math.floor(Math.random() * 30) + 10; // 10-39
+          answer = num1 - num2;
+        }
+      }
+
+      const formulaStr = `${num1} ${isAddition ? '+' : '-'} ${num2} = ?`;
+      
+      // สร้างคำตอบลวงที่ใกล้เคียง
+      let wrongAnswer;
+      do {
+        const offset = (Math.random() < 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        wrongAnswer = answer + offset;
+      } while (wrongAnswer === answer || wrongAnswer < 0);
+
+      // สุ่มฝั่งของคำตอบ (0 = ซ้าย, 1 = ขวา)
+      const correctIndex = Math.random() < 0.5 ? 0 : 1;
+      const options = [];
+      options[correctIndex] = answer;
+      options[1 - correctIndex] = wrongAnswer;
+
+      currentProblem = {
+        formula: formulaStr,
+        answer: answer,
+        options: options,
+        correctIndex: correctIndex
+      };
+
+      // รีเซ็ตการตกแต่งปุ่มกลับเป็นค่าเริ่มต้น
+      document.getElementById('choice-left-btn').classList.remove('choice-hovered', 'opacity-50');
+      document.getElementById('choice-right-btn').classList.remove('choice-hovered', 'opacity-50');
+
+      // เรนเดอร์โจทย์และตัวเลือกบน UI
+      document.getElementById('math-problem').innerText = formulaStr;
+      document.getElementById('choice-left-text').innerText = options[0];
+      document.getElementById('choice-right-text').innerText = options[1];
+
+      canSelect = true;
     }
 
-    // ฟังก์ชันกระตุ้นคะแนนแบบลอยตัว (+10 หรือ -5)
+    // ตัวลอยแสดงตัวเลขคะแนน (+10, -5)
     function spawnFloatingText(text, isPositive, x, y) {
       const floatDiv = document.createElement('div');
-      floatDiv.className = `floating-score absolute z-50 font-black text-3xl sm:text-4xl lg:text-5xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)] pointer-events-none select-none`;
+      floatDiv.className = `floating-score absolute z-50 font-black text-4xl sm:text-5xl lg:text-6xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.4)] pointer-events-none select-none`;
       floatDiv.style.left = `${x}px`;
       floatDiv.style.top = `${y}px`;
       floatDiv.innerText = text;
@@ -504,165 +511,92 @@
       }
       
       document.body.appendChild(floatDiv);
-      setTimeout(() => floatDiv.remove(), 800);
+      setTimeout(() => floatDiv.remove(), 900);
     }
 
-    // จัดการการทุบตัวตุ่น
-    function whackMole(index, hitX = null, hitY = null) {
-      const mole = moles[index];
-      if (!mole.active || mole.hit || !isPlaying) return;
-      
-      mole.hit = true;
-      clearTimeout(mole.hideTimer);
+    // ฟังก์ชันประเมินเมื่อผู้เล่นทำการตอบ
+    function submitAnswer(selectedIndex, pointX = null, pointY = null) {
+      if (!isPlaying || !canSelect) return;
+      canSelect = false;
 
-      const moleBody = document.getElementById(`mole-body-${index}`);
-      const moleBanner = document.getElementById(`mole-banner-${index}`);
-      const rect = document.getElementById(`hole-${index}`).getBoundingClientRect();
-      
-      // หาพิกัดศูนย์กลางหากไม่มีพิกัดจากการทุบที่แน่นอน
-      const posX = hitX !== null ? hitX : rect.left + rect.width / 2;
-      const posY = hitY !== null ? hitY : rect.top + rect.height / 3;
+      const btnLeft = document.getElementById('choice-left-btn');
+      const btnRight = document.getElementById('choice-right-btn');
+      const selectedBtn = selectedIndex === 0 ? btnLeft : btnRight;
+      const targetBtn = selectedIndex === 0 ? btnLeft : btnRight;
+      const rect = targetBtn.getBoundingClientRect();
 
-      if (mole.isKoKa) {
-        // ตีถูกคำมาตราแม่ ก กา!
+      const posX = pointX !== null ? pointX : rect.left + rect.width / 2;
+      const posY = pointY !== null ? pointY : rect.top + rect.height / 3;
+
+      if (selectedIndex === currentProblem.correctIndex) {
+        // ตอบถูกต้อง!
         score += 10;
-        totalCorrectHits++;
+        totalCorrect++;
         playCorrectSound();
         spawnFloatingText('+10', true, posX, posY);
-        
-        // ป้ายเปลี่ยนเป็นสีเขียวตอบรับความถูกต้อง (และยังคงความกว้างขั้นต่ำของกรอบไม่ให้ตัวอักษรล้น)
-        moleBanner.className = "bg-green-500 border-[3px] sm:border-4 border-green-700 rounded-2xl px-4 py-1.5 font-bold text-white shadow-md mb-2 text-center scale-95 sm:scale-100 min-w-[100px] sm:min-w-[130px] select-none transition-colors duration-200";
-        
+
+        // ไฮไลต์สีเขียวแสดงความถูกต้องสั้นๆ
+        selectedBtn.style.background = 'linear-gradient(to bottom, #22c55e, #16a34a)';
+        selectedBtn.style.borderColor = '#15803d';
       } else {
-        // ตีผิดตัว (คำมีตัวสะกด)
-        score = Math.max(0, score - 5); // ป้องกันคะแนนติดลบ
-        totalWrongHits++;
+        // ตอบผิดพลาด
+        score = Math.max(0, score - 5);
+        totalWrong++;
         playWrongSound();
         spawnFloatingText('-5', false, posX, posY);
-        
-        // ป้ายเปลี่ยนเป็นสีแดงเตือน (และยังคงความกว้างขั้นต่ำของกรอบไม่ให้ตัวอักษรล้น)
-        moleBanner.className = "bg-rose-500 border-[3px] sm:border-4 border-rose-700 rounded-2xl px-4 py-1.5 font-bold text-white shadow-md mb-2 text-center scale-95 sm:scale-100 min-w-[100px] sm:min-w-[130px] select-none transition-colors duration-200";
+
+        // ไฮไลต์ขอบสีเข้มและแสดงเอฟเฟกต์การสั่น
+        selectedBtn.style.background = 'linear-gradient(to bottom, #7f1d1d, #991b1b)';
+        selectedBtn.style.borderColor = '#450a0a';
       }
 
-      // อัปเดตแสดงคะแนนปัจจุบัน
+      // แสดงคะแนนสะสมใหม่ทันที
       document.getElementById('score-display').innerText = score < 10 ? '0' + score : score;
 
-      // บังคับมุดลงเร่งด่วนหลังจากถูกทุบ 250ms เพื่อความลื่นไหล
+      // ล็อคปุ่มคำตอบ 0.6 วินาทีแล้วดึงโจทย์ใหม่ขึ้นมาเล่นทันที
       setTimeout(() => {
-        moleBody.classList.remove('translate-y-0');
-        moleBody.classList.add('translate-y-[115%]');
-        setTimeout(() => {
-          mole.active = false;
-          mole.hit = false;
-        }, 300);
-      }, 250);
+        // คืนค่ารูปแบบสไตล์ดั้งเดิมให้แก่กระดานปุ่ม
+        btnLeft.style.background = '';
+        btnLeft.style.borderColor = '';
+        btnRight.style.background = '';
+        btnRight.style.borderColor = '';
+        
+        generateQuestion();
+        playNextProblemSound();
+      }, 700);
     }
 
-    // รองรับการสัมผัสหรือคลิกเมาส์เสริมบนหน้าจอ (เผื่อไม่มีสิทธิ์กล้อง / Smartboard)
-    function handleTouchWhack(index) {
-      if (!isPlaying) return;
-      
-      const rect = document.getElementById(`hole-${index}`).getBoundingClientRect();
+    // ช่องทางสัมผัสหน้าจอ/เมาส์คลิกแบบแมนนวล
+    function handleTouchAnswer(index) {
+      if (!isPlaying || !canSelect) return;
+      const rect = document.getElementById(index === 0 ? 'choice-left-btn' : 'choice-right-btn').getBoundingClientRect();
       const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 3;
+      const y = rect.top + rect.height / 2;
       
-      whackMole(index, x, y);
-      triggerMouseStrike(x, y);
+      submitAnswer(index, x, y);
+      triggerStrikeVisual(x, y);
     }
 
-    // มุดตัวตุ่นที่หมดอายุลงหลุมแบบธรรมชาติ
-    function hideMole(index) {
-      const mole = moles[index];
-      if (!mole.active || mole.hit) return;
-
-      const moleBody = document.getElementById(`mole-body-${index}`);
-      moleBody.classList.remove('translate-y-0');
-      moleBody.classList.add('translate-y-[115%]');
-
-      setTimeout(() => {
-        mole.active = false;
-      }, 300);
-    }
-
-    // สุ่มเสกตัวตุ่นขึ้นมาโผล่ที่หลุม
-    function spawnMole() {
-      if (!isPlaying) return;
-
-      const freeMoles = moles.filter(m => !m.active);
-      if (freeMoles.length > 0) {
-        const randomMole = freeMoles[Math.floor(Math.random() * freeMoles.length)];
-        
-        const isKoKa = Math.random() < 0.55;
-        const selectedWord = isKoKa 
-          ? wordsKoKa[Math.floor(Math.random() * wordsKoKa.length)]
-          : wordsWithConsonants[Math.floor(Math.random() * wordsWithConsonants.length)];
-        
-        randomMole.active = true;
-        randomMole.hit = false;
-        randomMole.isKoKa = isKoKa;
-        randomMole.word = selectedWord;
-
-        const wordText = document.getElementById(`mole-word-${randomMole.index}`);
-        const moleBanner = document.getElementById(`mole-banner-${randomMole.index}`);
-        const moleBody = document.getElementById(`mole-body-${randomMole.index}`);
-
-        wordText.innerText = selectedWord;
-        
-        // สีกระดานคำปกติ
-        moleBanner.className = "bg-white border-[3px] sm:border-4 border-amber-500 rounded-2xl px-4 py-1.5 font-bold text-amber-900 shadow-md mb-2 text-center scale-95 sm:scale-100 min-w-[100px] sm:min-w-[130px] select-none transition-colors duration-200";
-        
-        // กระตุ้นการมุดโผล่ขึ้นมาด้านบน
-        moleBody.classList.remove('translate-y-[115%]');
-        moleBody.classList.add('translate-y-0');
-        playPopSound();
-
-        // บันทึกเวลาหลบหลีกหากไม่มีการทุบเกิดขึ้น
-        randomMole.hideTimer = setTimeout(() => {
-          hideMole(randomMole.index);
-        }, moleStayDuration);
-      }
-
-      // วางรอบเวลาโผล่ครั้งต่อไป (เพิ่มความถี่เร่งด่วนตามเวลาที่ใกล้จะหมด)
-      const ratio = (60 - timeLeft) / 60; 
-      const currentMinInterval = minSpawnInterval - (ratio * 850); 
-      const currentMaxInterval = maxSpawnInterval - (ratio * 1000); 
-      moleStayDuration = 1800 - (ratio * 900); 
-
-      const nextSpawn = Math.random() * (currentMaxInterval - currentMinInterval) + currentMinInterval;
-      spawnTimeout = setTimeout(spawnMole, nextSpawn);
-    }
-
-    // ยุติการเล่นเกมและแสดงผลสถิติแบบละเอียด
+    // สัญญาณเวลาหมดรอบเกม
     function endGame() {
       isPlaying = false;
       clearInterval(gameInterval);
-      clearTimeout(spawnTimeout);
       
-      mouseCursorActive = false;
+      molesCursors = [];
 
-      moles.forEach(mole => {
-        clearTimeout(mole.hideTimer);
-        const moleBody = document.getElementById(`mole-body-${mole.index}`);
-        if (moleBody) {
-          moleBody.classList.remove('translate-y-0');
-          moleBody.classList.add('translate-y-[115%]');
-        }
-        mole.active = false;
-      });
-
-      let evaluation = "เยี่ยมยอดมาก! มาตรา แม่ ก กา จำขึ้นใจแน่นอน";
+      let evaluation = "นักคณิตศาสตร์ตัวน้อยยอดเยี่ยมที่สุด!";
       if (score === 0) {
-        evaluation = "ลองใหม่อีกสักรอบนะคร้าบ มุ่งมั่นสู้ต่อไป!";
-      } else if (score < 100) {
-        evaluation = "เก่งมากเลยครับ! ฝึกฝนบ่อยๆ จะทำคะแนนได้มากขึ้นนะ";
-      } else if (score >= 200) {
-        evaluation = "สุดยอดอัจฉริยะภาษาไทย! ทุบแม่นยำรวดเร็วเหนือแสงมาก";
+        evaluation = "ลองใหม่อีกครั้งนะ ยินดีต้อนรับความพยายามเสมอ!";
+      } else if (score < 80) {
+        evaluation = "เก่งมากเลยครับ! ลองฝึกคิดเลขบ่อยๆ จะจำแม่นมากยิ่งขึ้นนะ";
+      } else if (score >= 150) {
+        evaluation = "อัจฉริยะคิดเร็วเหนือแสง! สมองไวฉับไวมากตัวน้อย!";
       }
 
       document.getElementById('evaluation-text').innerText = evaluation;
       document.getElementById('final-score').innerText = score;
-      document.getElementById('stat-correct').innerText = `${totalCorrectHits} ครั้ง`;
-      document.getElementById('stat-wrong').innerText = `${totalWrongHits} ครั้ง`;
+      document.getElementById('stat-correct').innerText = `${totalCorrect} ข้อ`;
+      document.getElementById('stat-wrong').innerText = `${totalWrong} ข้อ`;
 
       if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
@@ -673,7 +607,7 @@
       document.getElementById('game-over-screen').classList.remove('hidden');
     }
 
-    // อัปเดตเวลานับถอยหลังหลัก
+    // นับถอยหลังเวลาทีละวินาที
     function updateTimer() {
       if (!isPlaying) return;
       timeLeft--;
@@ -697,9 +631,12 @@
       }
     }
 
+    /* ส่วนวิเคราะห์ตำแหน่งมือและวาดกราฟิกคทาดาววิเศษลอยบน Canvas */
     const gameCanvas = document.getElementById('game-canvas');
     const gameCtx = gameCanvas.getContext('2d');
-    
+    let molesCursors = []; // เก็บตัวตรวจจับพิกัดชี้มือในโหมด AR
+    let cameraActive = false;
+
     function resizeCanvas() {
       gameCanvas.width = window.innerWidth;
       gameCanvas.height = window.innerHeight;
@@ -707,81 +644,110 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    function triggerMouseStrike(x, y) {
-      let mouseCursor = cursors.find(c => c.isMouse);
+    function triggerStrikeVisual(x, y) {
+      let mouseCursor = molesCursors.find(c => c.isMouse);
       if (!mouseCursor) {
         mouseCursor = { x: x, y: y, strikeTimer: 0, isMouse: true };
-        cursors.push(mouseCursor);
+        molesCursors.push(mouseCursor);
       }
       mouseCursor.x = x;
       mouseCursor.y = y;
-      mouseCursor.strikeTimer = 10; 
+      mouseCursor.strikeTimer = 10;
     }
 
-    // วาดค้อนพลาสติกของเล่นนุ่มฟูสีแดง-ส้ม
-    function drawHammer(ctx, x, y, rotationDeg) {
+    // ฟังก์ชันวาด "คฑาดาววิเศษเรืองแสง" นำทางนิ้วผู้ใช้
+    function drawMagicWand(ctx, x, y, isStriking) {
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(rotationDeg * Math.PI / 180);
       
-      ctx.fillStyle = '#f97316';
-      ctx.strokeStyle = '#c2410c';
-      ctx.lineWidth = 3;
+      // หมุนเอียงเล็กน้อยสร้างมุมมองธรรมชาติ
+      const rotation = isStriking ? -0.5 : -0.2;
+      ctx.rotate(rotation);
+      
+      // 1. วาดก้านคฑาเวทมนตร์ (ไล่สีส้มเหลือง)
+      const grad = ctx.createLinearGradient(0, 40, 0, -40);
+      grad.addColorStop(0, '#78350f');
+      grad.addColorStop(0.3, '#d97706');
+      grad.addColorStop(1, '#fbbf24');
+      ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.roundRect(-6, 0, 12, 55, 6);
+      ctx.roundRect(-4, -10, 8, 70, 4);
       ctx.fill();
-      ctx.stroke();
-      
-      ctx.fillStyle = '#ef4444';
-      ctx.strokeStyle = '#991b1b';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.roundRect(-28, -22, 56, 28, 8);
-      ctx.fill();
-      ctx.stroke();
-      
+
+      // 2. แสงเรืองรอง (Outer Glow)
+      ctx.shadowColor = '#facc15';
+      ctx.shadowBlur = isStriking ? 30 : 15;
+
+      // 3. วาดดาวห้าแฉกที่ปลายคฑา
       ctx.fillStyle = '#facc15';
       ctx.beginPath();
-      ctx.roundRect(-28, -19, 8, 22, 4);
-      ctx.roundRect(20, -19, 8, 22, 4);
+      const spikes = 5;
+      const outerRadius = isStriking ? 25 : 18;
+      const innerRadius = isStriking ? 12 : 9;
+      let rot = Math.PI / 2 * 3;
+      let cx = 0;
+      let cy = -15; // ปลายไม้ด้านบน
+      let step = Math.PI / spikes;
+
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        cx = Math.cos(rot) * outerRadius;
+        cy = -15 + Math.sin(rot) * outerRadius;
+        ctx.lineTo(cx, cy);
+        rot += step;
+
+        cx = Math.cos(rot) * innerRadius;
+        cy = -15 + Math.sin(rot) * innerRadius;
+        ctx.lineTo(cx, cy);
+        rot += step;
+      }
+      ctx.lineTo(0, -15 - outerRadius);
+      ctx.closePath();
       ctx.fill();
-      
+
+      // 4. วาดเม็ดพลอยสีแดงกลางดวงดาววิเศษ
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, -15, 4, 0, Math.PI * 2);
+      ctx.fill();
+
       ctx.restore();
     }
 
-    // อัปเดตและวาดหน้าจอ Canvas วนซ้ำต่อเนื่อง
+    // วาดแสดงผลสัญลักษณ์และคทามือในลูปเฟรมเรตหลัก
     function drawLoop() {
       gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
       if (isPlaying) {
         let activeHandCount = 0;
 
-        cursors.forEach(cursor => {
-          let angle = -20; 
-          if (cursor.strikeTimer > 0) {
-            angle = -45 + (10 - cursor.strikeTimer) * 8; 
+        molesCursors.forEach(cursor => {
+          const isStriking = cursor.strikeTimer > 0;
+          if (isStriking) {
             cursor.strikeTimer--;
           }
           
-          drawHammer(gameCtx, cursor.x, cursor.y, angle);
+          drawMagicWand(gameCtx, cursor.x, cursor.y, isStriking);
           
           if (!cursor.isMouse) {
             activeHandCount++;
           }
         });
 
+        // ควบคุมแจ้งเตือนข้อความสถานะด้านบน
         const statusEl = document.getElementById('camera-status');
         if (cameraActive) {
           if (activeHandCount > 0) {
-            statusEl.innerText = "🎮 ควบคุมได้สนุกสุดใจ! พร้อมทุบแล้ว";
-            statusEl.className = "bg-green-600/80 backdrop-blur-sm text-white border-2 border-green-400/50 px-4 py-2 rounded-full text-sm sm:text-base font-bold";
+            statusEl.innerText = "🎮 ตรวจพบมือแล้ว! ยื่นคฑาวิเศษไปแตะคำตอบซ้าย-ขวาได้เลย";
+            statusEl.className = "bg-green-600/90 backdrop-blur-sm text-white border-2 border-green-400/50 px-4 py-2 rounded-full text-xs sm:text-sm font-bold";
           } else {
-            statusEl.innerText = "👋 โหมด AR: ยกมือขึ้นหน้ากล้องเลย!";
-            statusEl.className = "bg-rose-600/80 backdrop-blur-sm text-yellow-200 border-2 border-rose-400 px-4 py-2 rounded-full text-sm sm:text-base font-bold animate-bounce";
+            statusEl.innerText = "👋 โหมด AR: ยกมือขึ้นแสดงหน้ากล้องเลย!";
+            statusEl.className = "bg-rose-600/90 backdrop-blur-sm text-yellow-200 border-2 border-rose-400 px-4 py-2 rounded-full text-xs sm:text-sm font-bold animate-bounce";
           }
         } else {
-          statusEl.innerText = "🖱️ โหมดปกติ: จิ้มแตะที่ตัวตุ่นเพื่อทุบ";
-          statusEl.className = "bg-blue-600/80 backdrop-blur-sm text-white border-2 border-blue-400 px-4 py-2 rounded-full text-sm sm:text-base font-bold";
+          statusEl.innerText = "🖱️ โหมดแตะสัมผัส: กดที่กล่องตัวเลือกเพื่อตอบโจทย์";
+          statusEl.className = "bg-blue-600/90 backdrop-blur-sm text-white border-2 border-blue-400 px-4 py-2 rounded-full text-xs sm:text-sm font-bold";
         }
       }
 
@@ -793,7 +759,7 @@
     const cameraCanvas = document.getElementById('camera-canvas');
     const cameraCtx = cameraCanvas.getContext('2d');
 
-    // ฟังก์ชันเริ่มจับความเคลื่อนไหวจากเว็บแคม
+    // เรียกเปิดสิทธิ์ใช้งานเว็บแคมและรันกล้องโต้ตอบ
     async function initCamera() {
       document.getElementById('loading-overlay').classList.remove('hidden');
       
@@ -821,25 +787,26 @@
         cameraActive = true;
         document.getElementById('loading-overlay').classList.add('hidden');
       } catch (err) {
-        console.warn("ไม่สามารถเริ่มต้นกล้องได้:", err);
+        console.warn("ไม่สามารถตรวจหากล้องหรือเปิดสิทธิ์ได้:", err);
         cameraActive = false;
         document.getElementById('loading-overlay').classList.add('hidden');
         
+        // ขึ้นแจ้งเตือนว่าผู้เล่นยังแตะตอบโจทย์ได้ปกติ
         const warningBox = document.createElement('div');
         warningBox.className = "absolute top-24 left-1/2 -translate-x-1/2 z-50 bg-amber-100 border-2 border-amber-500 text-amber-900 rounded-xl p-4 shadow-xl text-center max-w-sm";
-        warningBox.innerHTML = "📌 <b>เปิดใช้งานระบบแบบไม่ใช้กล้อง:</b> คุณครู/นักเรียน สามารถแตะหน้าจอหรือใช้เมาส์คลิกตีตัวตุ่นได้อย่างสมบูรณ์";
+        warningBox.innerHTML = "📌 <b>เปิดโหมดแตะสัมผัสโดยตรง:</b> นักเรียนสามารถใช้นิ้วทัชหน้าจอหรือคลิกเลือกตอบได้สมบูรณ์แบบ";
         document.body.appendChild(warningBox);
         setTimeout(() => warningBox.remove(), 7000);
       }
     }
 
-    // วาดเฟรมกล้องลงแคนวาสพื้นหลังแบบสะท้อนกระจก
+    // วาดแสดงภาพกล้องในแบบ Mirror เงาสะท้อนกระจก
     function drawCameraBackground(video) {
       const w = cameraCanvas.width = window.innerWidth;
       const h = cameraCanvas.height = window.innerHeight;
       
       cameraCtx.save();
-      // สะท้อนแกน X เพื่อทำเป็นกระจกเงาสร้างมิติเกมธรรมชาติ
+      // ย้ายพิกัดและสเกลเพื่อกลับฝั่งซ้ายขวาสำหรับการส่องกระจกธรรมชาติ
       cameraCtx.translate(w, 0);
       cameraCtx.scale(-1, 1);
       
@@ -863,25 +830,28 @@
       cameraCtx.restore();
     }
 
-    // ตั้งค่าสแกนข้อต่อมือ MediaPipe Hands
+    // ตรวจจับข้อต่อและประเมินผลการพาดผ่านปุ่ม
     const hands = new Hands({
       locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
 
     hands.setOptions({
       maxNumHands: 2,
-      modelComplexity: 0, 
-      minDetectionConfidence: 0.45,
-      minTrackingConfidence: 0.45
+      modelComplexity: 0,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
     });
 
     hands.onResults((results) => {
-      cursors = cursors.filter(c => c.isMouse);
+      // เคลียร์พอยน์เตอร์เก่าที่ไม่ใช่อุปกรณ์หลัก
+      molesCursors = molesCursors.filter(c => c.isMouse);
 
       if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
         results.multiHandLandmarks.forEach((landmarks) => {
+          // ใช้พิกัดปลายนิ้วชี้ (ข้อที่ 8) เป็นคฑาตอบคำตอบ
           const indexFingerTip = landmarks[8];
           
+          // คำนวณพิกัดแกนตามความกว้างสะท้อนเงาของกระจก
           const screenX = (1 - indexFingerTip.x) * window.innerWidth;
           const screenY = indexFingerTip.y * window.innerHeight;
 
@@ -892,53 +862,63 @@
             isMouse: false
           };
 
-          const holeElements = document.querySelectorAll('.hole-container');
-          holeElements.forEach((holeElement, idx) => {
-            const rect = holeElement.getBoundingClientRect();
-            const offset = 18; 
-            if (screenX >= rect.left - offset && screenX <= rect.right + offset &&
-                screenY >= rect.top - offset && screenY <= rect.bottom + offset) {
-              
-              const mole = moles[idx];
-              if (mole.active && !mole.hit) {
-                whackMole(idx, screenX, screenY);
-                newCursor.strikeTimer = 10; 
-              }
-            }
-          });
+          if (canSelect) {
+            // ตรวจการชนของคฑากับปุ่มตัวเลือกซ้ายหรือขวา
+            const btnLeft = document.getElementById('choice-left-btn');
+            const btnRight = document.getElementById('choice-right-btn');
+            
+            const rectLeft = btnLeft.getBoundingClientRect();
+            const rectRight = btnRight.getBoundingClientRect();
+            
+            // เพิ่มระยะขอบชนรอบนอก 10 พิกเซลเพื่อการควบคุมที่ราบรื่น
+            const offset = 10;
 
-          cursors.push(newCursor);
+            if (screenX >= rectLeft.left - offset && screenX <= rectLeft.right + offset &&
+                screenY >= rectLeft.top - offset && screenY <= rectLeft.bottom + offset) {
+              btnLeft.classList.add('choice-hovered');
+              submitAnswer(0, screenX, screenY);
+              newCursor.strikeTimer = 10;
+            } else if (screenX >= rectRight.left - offset && screenX <= rectRight.right + offset &&
+                       screenY >= rectRight.top - offset && screenY <= rectRight.bottom + offset) {
+              btnRight.classList.add('choice-hovered');
+              submitAnswer(1, screenX, screenY);
+              newCursor.strikeTimer = 10;
+            } else {
+              btnLeft.classList.remove('choice-hovered');
+              btnRight.classList.remove('choice-hovered');
+            }
+          }
+
+          molesCursors.push(newCursor);
         });
       }
     });
 
+    // จับพิกัดเมาส์เสริมกรณีไม่มีการสแกนกล้อง
     window.addEventListener('mousemove', (e) => {
-      if (!isPlaying || cameraActive) return; 
+      if (!isPlaying || cameraActive) return;
       
-      let mouseCursor = cursors.find(c => c.isMouse);
+      let mouseCursor = molesCursors.find(c => c.isMouse);
       if (!mouseCursor) {
         mouseCursor = { x: e.clientX, y: e.clientY, strikeTimer: 0, isMouse: true };
-        cursors.push(mouseCursor);
+        molesCursors.push(mouseCursor);
       } else {
         mouseCursor.x = e.clientX;
         mouseCursor.y = e.clientY;
       }
     });
 
-    // เริ่มกิจกรรมลุยความรู้รอบตีตุ่นสะกด
+    // ฟังก์ชันรันกิจกรรมเกมคณิตศาสตร์คิดเร็ว
     async function startGame() {
       initAudio();
       
       score = 0;
       timeLeft = 60;
-      totalCorrectHits = 0;
-      totalWrongHits = 0;
+      totalCorrect = 0;
+      totalWrong = 0;
       isPlaying = true;
-      cursors = [];
-
-      minSpawnInterval = 1500;
-      maxSpawnInterval = 2000;
-      moleStayDuration = 1800;
+      molesCursors = [];
+      canSelect = true;
 
       document.getElementById('score-display').innerText = '00';
       document.getElementById('time-display').innerText = '60';
@@ -947,16 +927,17 @@
       document.getElementById('game-over-screen').classList.add('hidden');
       document.getElementById('game-screen').classList.remove('hidden');
 
+      // ตรวจสอบความถูกต้องและเปิดใช้เว็บแคม
       await initCamera();
 
+      // เริ่มสร้างโจทย์แรกพร้อมรันลูปรอบเวลา
+      generateQuestion();
       gameInterval = setInterval(updateTimer, 1000);
-      spawnMole();
     }
 
+    // กำหนดเหตุการณ์คลิกปุ่มเริ่มต้นใหม่และปุ่มเริ่มแรก
     document.getElementById('btn-start').addEventListener('click', startGame);
     document.getElementById('btn-restart').addEventListener('click', startGame);
-
-    renderMolesGrid();
   </script>
 </body>
 </html>
